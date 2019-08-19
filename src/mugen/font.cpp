@@ -14,7 +14,7 @@
 #include "section.h"
 #include "reader.h"
 #include "util.h"
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/debug.h>
 #include <r-tech1/funcs.h>
 #include <r-tech1/exceptions/load_exception.h>

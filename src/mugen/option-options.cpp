@@ -30,7 +30,7 @@
 #include <r-tech1/input/input-source.h>
 #include <r-tech1/exceptions/exception.h>
 
-#include "globals.h"
+// #include "globals.h"
 
 namespace PaintownUtil = ::Util;
 using namespace std;

@@ -38,14 +38,6 @@ struct render_message{
 	render_message & operator=( const render_message & rhs ){
 		if ( this == &rhs ) return *this;
 
-		/*
-		this->r_font = rhs.r_font;
-		this->x = rhs.x;
-		this->y = rhs.y;
-		this->fg = rhs.fg;
-		this->bg = rhs.bg;
-		this->str = rhs.str;
-		*/
 		return *this;
 	}
 

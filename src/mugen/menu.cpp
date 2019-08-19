@@ -27,7 +27,7 @@
 #include <r-tech1/system.h>
 #include <r-tech1/parameter.h>
 
-#include "globals.h"
+// #include "globals.h"
 #include "factory/font_render.h"
 #include "parse-cache.h"
 

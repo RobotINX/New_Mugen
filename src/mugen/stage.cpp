@@ -29,7 +29,7 @@
 #include "object/object_attack.h"
 // #include "object/player.h"
 */
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/debug.h>
 #include "factory/font_render.h"
 #include "ast/all.h"

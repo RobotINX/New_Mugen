@@ -34,7 +34,7 @@
 #include "sprite.h"
 #include "util.h"
 #include "stage.h"
-#include "globals.h"
+// #include "globals.h"
 #include "state.h"
 #include "compiler.h"
 // #include "command.h"

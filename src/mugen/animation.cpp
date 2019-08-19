@@ -2,7 +2,7 @@
 #include "animation.h"
 #include "state.h"
 
-#include "globals.h"
+// #include "globals.h"
 #include <string>
 #include <vector>
 

@@ -111,7 +111,7 @@ def main():
     
 def androidSDLMain():
     if useAndroid():
-        # return ['util/android/jni/SDL_android_main.cpp']
+        # return ['util/android/jni/SDL_android_main.cpp'=[=ḉ
         return []
     else:
         return []
@@ -123,22 +123,11 @@ def psp_prx(env):
     else:
         return []
 
-use.Depends(use.Peg('openbor/data.peg'), 'mugen/parser/vembyr/peg.py')
-
 options = {'networking': use['PAINTOWN_NETWORKING'],
            'sdl': useSDL(),
            'allegro': useAllegro4(),
            'allegro5': useAllegro5()
           }
-
-# FIXME: fix minpspw build at some point
-
-#if not useSDL() and not useAllegro5():
-#    use.Prepend(ARCHIVES = [alGifLibrary(use)])
-#if useSDL() and not useMinpspw():
-#    use.Prepend(ARCHIVES = [sdlImageLibrary(use), sprigLibrary(use), sdlMixerLibrary(use), stretchLibrary(use)])
-#elif useMinpspw():
-#    use.Prepend(ARCHIVES = [sprigLibrary(use), stretchLibrary(use)])
 
 def addObjects(objects):
     obj_files.extend(objects)
@@ -146,23 +135,8 @@ def addObjects(objects):
 # Make this a function so we don't clobber the 'use' variable
 def buildStuff(use):
     SConscript('mugen/SConscript', exports = ['use'])
-    SConscript('paintown-engine/SConscript', exports = ['use'])
-    SConscript('openbor/SConscript', exports = ['use'])
 
 paintownEnv = use.Clone()
-# stuff(paintownEnv)
-
-def test(env):
-    # Hack to replicate checking for python
-    use = env.Clone()
-    # Ugly way to pass the custom tests in
-    config = use.Configure(custom_tests = use['PAINTOWN_TESTS'])
-    # config.CheckRuby()
-    config.CheckPython()
-    use = config.Finish()
-    SConscript('test/SConstruct', exports = ['use'])
-
-# test(use)
 
 buildStuff(paintownEnv)
 # FIXME: adding psp_prx here is ugly, find a better way

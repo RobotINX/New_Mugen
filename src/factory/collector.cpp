@@ -4,9 +4,7 @@
 #include <r-tech1/sound/sound.h>
 #include <r-tech1/init.h>
 #include "collector.h"
-#include "paintown-engine/game/nameplacer.h"
 #include "font_render.h"
-#include "paintown-engine/factory/object_factory.h"
 #include "mugen/config.h"
 #include <iostream>
 
@@ -21,8 +19,6 @@ Collector::Collector(){
 
 /* cleans up global state */
 Collector::~Collector(){
-    ObjectFactory::destroy();
-    NamePlacer::destroy();
     FontFactory::destroy();
     FontRender::destroy();
     Graphics::Bitmap::cleanupTemporaryBitmaps();

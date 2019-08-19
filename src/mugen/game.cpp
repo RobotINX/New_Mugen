@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <ostream>
 #include <sstream>
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/font.h>
 #include <r-tech1/token.h>
 #include <r-tech1/configuration.h>

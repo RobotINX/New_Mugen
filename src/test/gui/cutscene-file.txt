@@ -1,3 +1,0 @@
-(cutscene 
- (name "intro")
- (scene (file "../src/test/gui/scene1.txt")))

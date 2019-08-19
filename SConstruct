@@ -1633,13 +1633,13 @@ staticEnv['PAINTOWN_BUILD_TESTS'] = False
 use = staticEnv
 static = SConscript('src/SConscript', variant_dir = buildDirStatic, exports = ['use'] )
 
-scripts = Split("""
-src/paintown-engine/script/modules/paintown.py
-""");
+#scripts = Split("""
+#src/paintown-engine/script/modules/paintown.py
+#""");
 # Don't care about ruby for now
 # src/paintown-engine/script/modules/paintown.rb
 
-Default(Install('data/scripts', scripts))
+#Default(Install('data/scripts', scripts))
 
 def psp_eboot(target, source, env):
     print "Make eboot from %s to %s" % (source[0].name, target[0].name)

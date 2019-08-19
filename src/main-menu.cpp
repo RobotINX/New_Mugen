@@ -3,15 +3,6 @@
 #include <sstream>
 #include <vector>
 
-#ifdef PS3
-/* For network debugging */
-#include <net/net.h>
-#endif
-
-/* Default debug level. On most pc's it should be 0 to get normal warnings/info.
- * On consoles set it to -1 to disable all text output.
- * If you are debugging then higher values like 1 or 2 are ok.
- */
 #if defined(XENON) || defined(WII)
 static const int DEFAULT_DEBUG = -1;
 #else
@@ -29,10 +20,6 @@ static const int DEFAULT_DEBUG = 0;
 #include <r-tech1/menu/menu-exception.h>
 #include <r-tech1/menu/optionfactory.h>
 #include <r-tech1/input/input-manager.h>
-#include "paintown-engine/game/options.h"
-#include "paintown-engine/game/mod.h"
-#include "paintown-engine/network/client.h"
-#include "paintown-engine/network/server.h"
 #include <r-tech1/exceptions/shutdown_exception.h>
 #include <r-tech1/exceptions/exception.h>
 #include <r-tech1/exceptions/load_exception.h>
@@ -49,8 +36,6 @@ static const int DEFAULT_DEBUG = 0;
 #include <r-tech1/init.h>
 #include <r-tech1/main.h>
 #include <r-tech1/argument.h>
-
-#include "paintown-engine/game/argument.h"
 
 #include "mugen/options.h"
 #include "mugen/argument.h"
@@ -352,142 +337,6 @@ public:
     }
 };
 
-static Filesystem::AbsolutePath mainMenuPath(){
-    string menu = Paintown::Mod::getCurrentMod()->getMenu();
-    return Storage::instance().find(Filesystem::RelativePath(menu));
-}
-
-/* FIXME: move the network arguments to the paintown-engine directory */
-class NetworkServerArgument: public Argument::Parameter {
-public:
-    vector<string> keywords() const {
-        vector<string> out;
-        out.push_back("server");
-        out.push_back("network-server");
-        return out;
-    }
-
-    string description() const {
-        return " : Go straight to the network server";
-    }
-
-    class Run: public Argument::Action {
-    public:
-        void act(){
-#ifdef HAVE_NETWORKING
-            Network::networkServer();
-#endif
-        }
-    };
-
-    vector<string>::iterator parse(vector<string>::iterator current, vector<string>::iterator end, Argument::ActionRefs & actions){
-        actions.push_back(Util::ReferenceCount<Argument::Action>(new Run()));
-        return current;
-    }
-
-};
-
-struct NetworkJoin{
-    NetworkJoin():
-        enabled(false){
-        }
-
-    bool enabled;
-    string name;
-    string host;
-    string port;
-}; 
-
-class NetworkJoinArgument: public Argument::Parameter {
-public:
-    NetworkJoin data;
-
-    vector<string> keywords() const {
-        vector<string> out;
-        out.push_back("network-join");
-        return out;
-    }
-
-    string description() const {
-        return " [<name>,<server ip>,<port>]: Join a network game directly. If not given, ip and port will be read from the configuration file if one exists otherwise they default to 127.0.0.1:7887. The name will be randomly generated if not given. Do not put spaces between the commas in the optional arguments.";
-    }
-
-    vector<string> split(string input, char splitter){
-        size_t find = input.find(splitter);
-        vector<string> out;
-        while (find != string::npos){
-            out.push_back(input.substr(0, find));
-            input.erase(0, find + 1);
-            find = input.find(splitter);
-        }
-        out.push_back(input);
-        return out;
-    }
-
-    void parseNetworkJoin(const string & input, string & port, string & host, string & name){
-        vector<string> args = split(input, ',');
-        if (args.size() > 2){
-            port = args[2];
-        }
-        if (args.size() > 1){
-            host = args[1];
-        }
-        if (args.size() > 0){
-            name = args[0];
-        }
-    }
-
-    class Run: public Argument::Action {
-    public:
-        Run(NetworkJoin join):
-            join(join){
-            }
-
-        NetworkJoin join;
-
-        void act(){
-#ifdef HAVE_NETWORKING
-            string port = join.port;
-            string host = join.host;
-            string name = join.name;
-            if (port == ""){
-                /* FIXME: replace 7887 with a constant */
-                port = Configuration::getProperty(Network::propertyLastClientPort, "7887");
-            }
-            if (host == ""){
-                host = Configuration::getProperty(Network::propertyLastClientHost, "127.0.0.1");
-            }
-            if (name == ""){
-                name = Configuration::getProperty(Network::propertyLastClientName, "player");
-            }
-            Global::debug(1) << "Client " << name << " " << host << " " << port << endl;
-            try{
-                Network::runClient(name, host, port);
-            } catch (const Network::NetworkException & fail){
-                Global::debug(0) << "Error running the network client: " << fail.getMessage() << endl;
-            }
-#endif
-        }
-    };
-
-    vector<string>::iterator parse(vector<string>::iterator current, vector<string>::iterator end, Argument::ActionRefs & actions){
-        data.enabled = true;
-        string port;
-        string host;
-        string name;
-        current++;
-        if (current != end){
-            parseNetworkJoin(*current, port, host, name);
-            data.port = port;
-            data.host = host;
-            data.name = name;
-        }
-
-        actions.push_back(Util::ReferenceCount<Argument::Action>(new Run(data)));
-        return current;
-    }
-};
-
 static const char * closestMatch(const string & s1, vector<const char *> args){
     const char * good = NULL;
     int minimum = -1;
@@ -503,73 +352,6 @@ static const char * closestMatch(const string & s1, vector<const char *> args){
     }
 
     return good;
-}
-
-/*
-static bool isArg(const string & s1, const char * s2[], int num){
-    for (int i = 0; i < num; i++){
-        if (strcasecmp(s1.c_str(), s2[i]) == 0){
-            return true;
-        }
-    }
-
-    return false;
-}
-*/
-
-/* {"a", "b", "c"}, 3, ',' => "a, b, c"
- */
-/*
-static const char * all(const char * args[], const int num, const char separate = ','){
-    static char buffer[1<<10];
-    strcpy(buffer, "");
-    for (int i = 0; i < num; i++){
-        char fuz[10];
-        sprintf(fuz, "%c ", separate);
-        strcat(buffer, args[i]);
-        if (i != num - 1){
-            strcat(buffer, fuz);
-        }
-    }
-    return buffer;
-}
-*/
-
-class MainMenuOptionFactory: public Menu::OptionFactory {
-public:
-    MainMenuOptionFactory(){
-    }
-
-    Paintown::OptionFactory paintownFactory;
-    Mugen::OptionFactory mugenFactory;
-
-    virtual MenuOption * getOption(const Gui::ContextBox & parent, const Token *token) const {
-        MenuOption * get = paintownFactory.getOption(parent, token);
-        if (get != NULL){
-            return get;
-        }
-
-        get = mugenFactory.getOption(parent, token);
-        if (get != NULL){
-            return get;
-        }
-
-        return Menu::OptionFactory::getOption(parent, token);
-    }
-};
-
-/* gets the mod name from system.txt */
-static Filesystem::AbsolutePath systemMod(){
-    TokenReader reader;
-    Token * mod = reader.readTokenFromFile(*Storage::instance().open(Storage::instance().find(Filesystem::RelativePath("system.txt"))));
-    if (mod != NULL){
-        string name;
-        if (mod->match("_/default-mod", name)){
-            return Storage::instance().find(Filesystem::RelativePath(name));
-        }
-        throw LoadException(__FILE__, __LINE__, "No `default-mod' token");
-    }
-    throw LoadException(__FILE__, __LINE__, "Could not get system mod");
 }
 
 static int startMain(const vector<Util::ReferenceCount<Argument::Action> > & actions, bool allow_quit){
@@ -624,76 +406,13 @@ static int startMain(const vector<Util::ReferenceCount<Argument::Action> > & act
 class DefaultGame: public Argument::Action {
 public:
     void act(){
-        Paintown::Mod::getCurrentMod()->playIntro();
-        MainMenuOptionFactory factory;
-        Menu::Menu game(mainMenuPath(), factory);
-        game.run(Menu::Context());
+        Mugen::run();
     }
 };
 
 template <class X>
 static void appendVector(vector<X> & to, const vector<X> & from){
     to.insert(to.end(), from.begin(), from.end());
-}
-
-static void setupSystemMod(){
-    try{
-        /* load the mod listed in data/system.txt */
-        Paintown::Mod::loadPaintownMod(systemMod());
-    } catch (...){
-        try{
-            /* failed to find anything, pray that data/paintown is there */
-            Paintown::Mod::loadDefaultMod();
-        } catch (...){
-            Global::debug(0) << "Could not find the paintown default mod" << std::endl;
-            /* Maybe just set up some ultra default thing? */
-            throw LoadException(__FILE__, __LINE__, "Could not load any mods");
-        }
-    }
-
-}
-
-static void setupPaintownMod(){
-    /* set the game mod. check in this order
-     * 1. whatever is in the configuration under (current-game ...)
-     * 2. whatever is in data/system.txt
-     * 3. try to load 'paintown'
-     * 4. die
-     */
-    try{
-        /* TODO: move this to some util class because its used here and in mugen */
-        std::string mod;
-        try {
-            Token * all = Configuration::getProperty("paintown/mod");
-            if (all != NULL){
-                Global::debug(1) << "Mod is " << all->toString() << std::endl;
-                string zip, mount;
-
-                /* Its either just a path to a file or an entry in a zip file or other container.
-                 * If its a zip entry then get the zip file, the mount point, and the entry path then
-                 * mount the zip.
-                 */
-                if (all->match("mod/file", mod)){
-                } else if (all->match("mod/container", zip, mount, mod)){
-                    Storage::instance().addOverlay(Filesystem::AbsolutePath(zip),
-                                                   Filesystem::AbsolutePath(mount));
-                }
-            }
-        } catch (const Filesystem::Exception & ex){
-            Global::debug(0) << "Could not load mugen motif because " << ex.getTrace() << std::endl;
-            mod.clear();
-        }
-
-        /* Found a motif */
-        if (!mod.empty()){
-            Paintown::Mod::loadPaintownMod(Filesystem::AbsolutePath(mod));
-            return;
-        }
-    } catch (const Exception::Base & fail){
-        Global::debug(0) << "Could not load mod " << fail.getTrace() << std::endl;
-    } catch (...){
-    }
-    setupSystemMod();
 }
 
 /* Sort arguments based on the first letter of the keywords */
@@ -717,12 +436,6 @@ static void setUpTouch(const Util::ReferenceCount<DeviceInput::Touch> & touch){
     int screenHeight = Graphics::Bitmap::getScreenHeight();
     int buttonSize = (int) (0.06 * sqrt(screenWidth * screenWidth + screenHeight * screenHeight));
 
-    /* dpad
-     *
-     *  X
-     * X X
-     *  X
-     */
     int center_x = buttonSize + buttonSize / 2;
     int center_y = screenHeight - buttonSize - buttonSize / 2;
 
@@ -745,9 +458,6 @@ static void setUpTouch(const Util::ReferenceCount<DeviceInput::Touch> & touch){
     y = center_y;
     touch->setZone(DeviceInput::Touch::Right, x - buttonSize / 2, y - buttonSize / 2, x + buttonSize / 2, y + buttonSize / 2);
 
-    /* X X X
-     * X X X
-     */
     int spacing = (int) (buttonSize * 0.1);
     center_x = screenWidth - buttonSize * 2 - spacing;
     center_y = screenHeight - buttonSize - buttonSize / 2;
@@ -791,28 +501,13 @@ static bool hasData(){
         Global::debug(0) << "data not installed yet" << std::endl;
     }
     return false;
-    /*
-    Filesystem::AbsolutePath installed = Filesystem::AbsolutePath("/sdcard/paintown/data/installed");
-    return Storage::instance().systemExists(installed);
-    */
 }
 
-/* 1. parse arguments
- * 2. initialize environment
- * 3. run main dispatcher
- * 4. quit
- */
 int rtech_main(int argc, char ** argv){
     Util::setDataPath(DATA_PATH);
 
     /* -1 means use whatever is in the configuration */
     Global::InitConditions conditions;
-
-#ifdef ANDROID
-    while (!hasData()){
-        sleep(1);
-    }
-#endif
 
     bool music_on = true;
     // bool joystick_on = true;
@@ -831,31 +526,10 @@ int rtech_main(int argc, char ** argv){
     Global::setDefaultDebugContext("paintown");
     vector<const char *> all_args;
 
-
-#ifdef PS3
-    /* find the directory that contains the binary and set the data path
-     * to that directory + our data path
-     */
-
-    if (argc > 0){
-        Path::AbsolutePath self(argv[0]);
-        Util::setDataPath(self.getDirectory().join(Path::RelativePath(Util::getDataPath2().path())).path());
-        /* set the home directory to wherever we started up from */
-        setenv("HOME", self.getDirectory().path().c_str(), 1);
-    }
-
-    /* Do network initialization early in case we need to use network debugging */
-    netInitialize();
-#endif
-
     vector<string> stringArgs;
     for (int q = 1; q < argc; q++){
         stringArgs.push_back(argv[q]);
     }
-
-#ifdef ANDROID
-    stringArgs.push_back("mugen");
-#endif
 
     vector<Util::ReferenceCount<Argument::Parameter> > arguments;
     arguments.push_back(Util::ReferenceCount<Argument::Parameter>(new WindowedArgument(&conditions)));
@@ -870,17 +544,7 @@ int rtech_main(int argc, char ** argv){
     arguments.push_back(Util::ReferenceCount<Argument::Parameter>(new DisableQuitArgument(&allow_quit)));
     arguments.push_back(Util::ReferenceCount<Argument::Parameter>(new HelpArgument(arguments)));
 
-    appendVector(arguments, Paintown::arguments());
     appendVector(arguments, Mugen::arguments());
-    /*
-    appendVector(arguments, Platformer::arguments());
-    appendVector(arguments, Asteroids::arguments());
-    */
-
-#ifdef HAVE_NETWORKING
-    arguments.push_back(Util::ReferenceCount<Argument::Parameter>(new NetworkServerArgument()));
-    arguments.push_back(Util::ReferenceCount<Argument::Parameter>(new NetworkJoinArgument()));
-#endif
 
     sortArguments(arguments);
     
@@ -935,18 +599,7 @@ int rtech_main(int argc, char ** argv){
         return -1;
     }
 
-    // diff.endTime();
-    // Global::debug(0) << diff.printTime("Init took") << endl;
-
-    // Graphics::Bitmap screen(Graphics::getScreenBuffer());
     Util::Parameter<Graphics::Bitmap*> use(Graphics::screenParameter, Graphics::getScreenBuffer());
-
-    try{
-        setupPaintownMod();
-    } catch (const LoadException & fail){
-        Global::debug(0) << "Could not load a paintown mod. Aborting. " << fail.getTrace() << std::endl;
-        return -1;
-    }
     
     InputManager input;
     Music music(music_on);

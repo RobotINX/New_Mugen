@@ -6,7 +6,7 @@
 #include <string>
 #include <list>
 #include <algorithm>
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/debug.h>
 #include "sprite.h"
 #include <r-tech1/regex.h>

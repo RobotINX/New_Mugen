@@ -35,7 +35,7 @@
 #include "reader.h"
 #include "config.h"
 #include "sprite.h"
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/init.h>
 #include "state.h"
 #include "parse-cache.h"

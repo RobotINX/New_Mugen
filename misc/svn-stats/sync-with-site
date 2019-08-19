@@ -1,3 +1,0 @@
-#!/bin/sh
-
-rsync -av stats kazzmir,paintown@web.sf.net:/home/project-web/paintown/htdocs/.

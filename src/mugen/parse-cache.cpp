@@ -5,7 +5,7 @@
 #include "parser/all.h"
 #include "ast/all.h"
 #include "ast/extra.h"
-#include "globals.h"
+// #include "globals.h"
 #include <r-tech1/file-system.h>
 #include <r-tech1/system.h>
 #include <r-tech1/debug.h>

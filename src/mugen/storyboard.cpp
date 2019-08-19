@@ -5,7 +5,7 @@
 #include <r-tech1/funcs.h>
 #include <r-tech1/events.h>
 #include <r-tech1/init.h>
-#include "globals.h"
+// #include "globals.h"
 #include "factory/font_render.h"
 #include "parse-cache.h"
 
